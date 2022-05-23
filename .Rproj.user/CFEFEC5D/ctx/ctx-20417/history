@@ -1,0 +1,512 @@
+ctrl_data_merged <- ctrl_data_merged %>% mutate(datagroup=0)
+# Bind treat/control data
+full_data_binded <- rbind(ctrl_data_merged, treat_data_merged)
+# Name datagroup -> 0=control, 1=treatment
+full_data_binded$datagroup<-factor(full_data_binded$datagroup,levels=c(0,1),labels=c("Control", "Treatment"))
+setwd("C:/Users/csong7/OneDrive - University of Nebraska-Lincoln/BoxMigrationUNL/01 Helikar IUSE/R Package/DBERlibR_data")
+if (!require(tidyverse)) install.packages('tidyverse')
+library(tidyverse)
+if (!require(readr)) install.packages('readr')
+library(readr)
+if (!require(dplyr)) install.packages('dplyr')
+library(dplyr)
+if (!require(broom)) install.packages('broom')
+library(broom)
+if (!require(car)) install.packages('car')
+library(car)
+if (!require(corrplot)) install.packages('corrplot')
+library(corrplot)
+if (!require(ggplot2)) install.packages('ggplot2')
+library(ggplot2)
+if (!require(ggpubr)) install.packages('ggpubr')
+library(ggpubr)
+if (!require(seriation)) install.packages('seriation')
+library(seriation)
+if (!require(PerformanceAnalytics)) install.packages('PerformanceAnalytics')
+library(PerformanceAnalytics)
+if (!require(naniar)) install.packages('naniar')
+library(naniar)
+if (!require(reshape)) install.packages('reshape')
+library(reshape)
+if (!require(openxlsx)) install.packages('openxlsx')
+library(openxlsx)
+if (!require(ggrepel)) install.packages('ggrepel')
+library(ggrepel)
+if (!require(rstatix)) install.packages('rstatix')
+library(rstatix)
+if (!require(emmeans)) install.packages('emmeans')
+library(emmeans)
+if (!require(stargazer)) install.packages('stargazer')
+library(stargazer)
+if (!require(psych)) install.packages('psych')
+library(psych)
+twowayrepeatedanova <- function() {
+options(warn=-1)
+# Read all data sets
+data_treat_pre <- read_csv("data_treat_pre.csv", show_col_types = FALSE)
+data_treat_post<- read_csv("data_treat_post.csv", show_col_types = FALSE)
+data_treat_post2 <- read_csv("data_treat_post2.csv", show_col_types = FALSE)
+data_ctrl_pre <- read_csv("data_ctrl_pre.csv", show_col_types = FALSE)
+data_ctrl_post<- read_csv("data_ctrl_post.csv", show_col_types = FALSE)
+data_ctrl_post2 <- read_csv("data_ctrl_post2.csv", show_col_types = FALSE)
+# Deleting students with too many skipped answers: data_treat_pre.csv-----------------
+nrow_all <- nrow(data_treat_pre)
+n <- as.numeric(length(data_treat_pre[,-1]))
+data_treat_pre <- data_treat_pre %>% mutate(m_rate = round(rowSums(is.na(data_treat_pre))/n,3))
+print("Skipped answers will be treated as incorrect in this package, and too many skipped answers may skew the results of data analysis. By default, students with more than 15% of skipped answers will be deleted from the data to prevent skewed results. If you don't agree with this rate of 15%, you need to provide a different rate below. If you're fine with 15%, just hit the 'Enter' key (i.e., no input) when you see a prompt 'Please enter an alternative rate...: ' below. If you want to apply an alternatie rate, please put it below in a decimal format like 0.2 for 20%")
+m_rate_default <- readline(prompt="Please enter an alternative rate in a decimal format (e.g., 0.1 for 10%, 0.25 for 25%): ")
+if (m_rate_default > 0) {
+data_treat_pre <- subset(data_treat_pre, m_rate < m_rate_default)
+nrow_subset <- nrow(data_treat_pre)
+n_students_deleted <- nrow_all-nrow_subset
+if (n_students_deleted > 0) {
+print(paste0("Regarding the 'data_treat_pre.csv' file, students with more than ",as.numeric(m_rate_default)*100,"% of skipped answers have been deleted from the dataframe. The number of students deleted from the 'data_treat_pre.csv' file is ",n_students_deleted,"."))
+} else {
+print(paste0("Regarding the 'data_treat_pre.csv' file, the number of students with more than ",as.numeric(m_rate_default)*100,"% of skipped answers is zero, so no student has been deleted from the dataframe."))
+}
+} else {
+data_treat_pre <- subset(data_treat_pre, m_rate < 0.15)
+nrow_subset <- nrow(data_treat_pre)
+n_students_deleted <- nrow_all-nrow_subset
+if (n_students_deleted > 0) {
+print(paste0("Regarding the 'data_treat_pre.csv' file, students with more than 15% of skipped answers have been deleted from the dataframe. The number of students deleted is ",n_students_deleted,"."))
+} else {
+print(paste0("Regarding the 'data_treat_pre.csv' file, the number of students with more than 15% of skipped answers is zero, so no student has been deleted from the dataframe."))
+}
+}
+# Deleting students with too many skipped answers: data_treat_post.csv-----------------
+nrow_all <- nrow(data_treat_post)
+n <- as.numeric(length(data_treat_post[,-1]))
+data_treat_post <- data_treat_post %>% mutate(m_rate = round(rowSums(is.na(data_treat_post))/n,3))
+if (m_rate_default > 0) {
+data_treat_post <- subset(data_treat_post, m_rate < m_rate_default)
+nrow_subset <- nrow(data_treat_post)
+n_students_deleted <- nrow_all-nrow_subset
+if (n_students_deleted > 0) {
+print(paste0("For the 'data_treat_post.csv' file, students with more than ",as.numeric(m_rate_default)*100,"% of skipped answers have been deleted from the dataframe. The number of students deleted is ",n_students_deleted,"."))
+} else {
+print(paste0("For the 'data_treat_post.csv' file, the number of students with more than ",as.numeric(m_rate_default)*100,"% of skipped answers is zero, so no student has been deleted from the dataframe."))
+}
+} else {
+data_treat_post <- subset(data_treat_post, m_rate < 0.15)
+nrow_subset <- nrow(data_treat_post)
+n_students_deleted <- nrow_all-nrow_subset
+if (n_students_deleted > 0) {
+print(paste0("For the 'data_treat_post.csv' file, students with more than 15% of skipped answers have been deleted from the dataframe. The number of students deleted is ",n_students_deleted,"."))
+} else {
+print(paste0("For the 'data_treat_post.csv' file, the number of students with more than 15% of skipped answers is zero, so no student has been deleted from the dataframe."))
+}
+}
+# Deleting students with too many skipped answers: data_treat_post2.csv-----------------
+nrow_all <- nrow(data_treat_post2)
+n <- as.numeric(length(data_treat_post2[,-1]))
+data_treat_post2 <- data_treat_post2 %>% mutate(m_rate = round(rowSums(is.na(data_treat_post2))/n,3))
+if (m_rate_default > 0) {
+data_treat_post2 <- subset(data_treat_post2, m_rate < m_rate_default)
+nrow_subset <- nrow(data_treat_post2)
+n_students_deleted <- nrow_all-nrow_subset
+if (n_students_deleted > 0) {
+print(paste0("For the 'data_treat_post2.csv' file, students with more than ",as.numeric(m_rate_default)*100,"% of skipped answers have been deleted from the dataframe. The number of students deleted is ",n_students_deleted,"."))
+} else {
+print(paste0("For the 'data_treat_post2.csv' file, the number of students with more than ",as.numeric(m_rate_default)*100,"% of skipped answers is zero, so no student has been deleted from the dataframe."))
+}
+} else {
+data_treat_post2 <- subset(data_treat_post2, m_rate < 0.15)
+nrow_subset <- nrow(data_treat_post2)
+n_students_deleted <- nrow_all-nrow_subset
+if (n_students_deleted > 0) {
+print(paste0("For the 'data_treat_post2.csv' file, students with more than 15% of skipped answers have been deleted from the dataframe. The number of students deleted is ",n_students_deleted,"."))
+} else {
+print(paste0("For the 'data_treat_post2.csv' file, the number of students with more than 15% of skipped answers is zero, so no student has been deleted from the dataframe."))
+}
+}
+#----------------------------------------------------------------
+# Deleting students with too many skipped answers: data_ctrl_pre.csv-----------------
+nrow_all <- nrow(data_ctrl_pre)
+n <- as.numeric(length(data_ctrl_pre[,-1]))
+data_ctrl_pre <- data_ctrl_pre %>% mutate(m_rate = round(rowSums(is.na(data_ctrl_pre))/n,3))
+print("Skipped answers will be ctrled as incorrect in this package, and too many skipped answers may skew the results of data analysis. By default, students with more than 15% of skipped answers will be deleted from the data to prevent skewed results. If you don't agree with this rate of 15%, you need to provide a different rate below. If you're fine with 15%, just hit the 'Enter' key (i.e., no input) when you see a prompt 'Please enter an alternative rate...: ' below. If you want to apply an alternatie rate, please put it below in a decimal format like 0.2 for 20%")
+m_rate_default <- readline(prompt="Please enter an alternative rate in a decimal format (e.g., 0.1 for 10%, 0.25 for 25%): ")
+if (m_rate_default > 0) {
+data_ctrl_pre <- subset(data_ctrl_pre, m_rate < m_rate_default)
+nrow_subset <- nrow(data_ctrl_pre)
+n_students_deleted <- nrow_all-nrow_subset
+if (n_students_deleted > 0) {
+print(paste0("Regarding the 'data_ctrl_pre.csv' file, students with more than ",as.numeric(m_rate_default)*100,"% of skipped answers have been deleted from the dataframe. The number of students deleted from the 'data_ctrl_pre.csv' file is ",n_students_deleted,"."))
+} else {
+print(paste0("Regarding the 'data_ctrl_pre.csv' file, the number of students with more than ",as.numeric(m_rate_default)*100,"% of skipped answers is zero, so no student has been deleted from the dataframe."))
+}
+} else {
+data_ctrl_pre <- subset(data_ctrl_pre, m_rate < 0.15)
+nrow_subset <- nrow(data_ctrl_pre)
+n_students_deleted <- nrow_all-nrow_subset
+if (n_students_deleted > 0) {
+print(paste0("Regarding the 'data_ctrl_pre.csv' file, students with more than 15% of skipped answers have been deleted from the dataframe. The number of students deleted is ",n_students_deleted,"."))
+} else {
+print(paste0("Regarding the 'data_ctrl_pre.csv' file, the number of students with more than 15% of skipped answers is zero, so no student has been deleted from the dataframe."))
+}
+}
+# Deleting students with too many skipped answers: data_ctrl_post.csv-----------------
+nrow_all <- nrow(data_ctrl_post)
+n <- as.numeric(length(data_ctrl_post[,-1]))
+data_ctrl_post <- data_ctrl_post %>% mutate(m_rate = round(rowSums(is.na(data_ctrl_post))/n,3))
+if (m_rate_default > 0) {
+data_ctrl_post <- subset(data_ctrl_post, m_rate < m_rate_default)
+nrow_subset <- nrow(data_ctrl_post)
+n_students_deleted <- nrow_all-nrow_subset
+if (n_students_deleted > 0) {
+print(paste0("For the 'data_ctrl_post.csv' file, students with more than ",as.numeric(m_rate_default)*100,"% of skipped answers have been deleted from the dataframe. The number of students deleted is ",n_students_deleted,"."))
+} else {
+print(paste0("For the 'data_ctrl_post.csv' file, the number of students with more than ",as.numeric(m_rate_default)*100,"% of skipped answers is zero, so no student has been deleted from the dataframe."))
+}
+} else {
+data_ctrl_post <- subset(data_ctrl_post, m_rate < 0.15)
+nrow_subset <- nrow(data_ctrl_post)
+n_students_deleted <- nrow_all-nrow_subset
+if (n_students_deleted > 0) {
+print(paste0("For the 'data_ctrl_post.csv' file, students with more than 15% of skipped answers have been deleted from the dataframe. The number of students deleted is ",n_students_deleted,"."))
+} else {
+print(paste0("For the 'data_ctrl_post.csv' file, the number of students with more than 15% of skipped answers is zero, so no student has been deleted from the dataframe."))
+}
+}
+# Deleting students with too many skipped answers: data_ctrl_post2.csv-----------------
+nrow_all <- nrow(data_ctrl_post2)
+n <- as.numeric(length(data_ctrl_post2[,-1]))
+data_ctrl_post2 <- data_ctrl_post2 %>% mutate(m_rate = round(rowSums(is.na(data_ctrl_post2))/n,3))
+if (m_rate_default > 0) {
+data_ctrl_post2 <- subset(data_ctrl_post2, m_rate < m_rate_default)
+nrow_subset <- nrow(data_ctrl_post2)
+n_students_deleted <- nrow_all-nrow_subset
+if (n_students_deleted > 0) {
+print(paste0("For the 'data_ctrl_post2.csv' file, students with more than ",as.numeric(m_rate_default)*100,"% of skipped answers have been deleted from the dataframe. The number of students deleted is ",n_students_deleted,"."))
+} else {
+print(paste0("For the 'data_ctrl_post2.csv' file, the number of students with more than ",as.numeric(m_rate_default)*100,"% of skipped answers is zero, so no student has been deleted from the dataframe."))
+}
+} else {
+data_ctrl_post2 <- subset(data_ctrl_post2, m_rate < 0.15)
+nrow_subset <- nrow(data_ctrl_post2)
+n_students_deleted <- nrow_all-nrow_subset
+if (n_students_deleted > 0) {
+print(paste0("For the 'data_ctrl_post2.csv' file, students with more than 15% of skipped answers have been deleted from the dataframe. The number of students deleted is ",n_students_deleted,"."))
+} else {
+print(paste0("For the 'data_ctrl_post2.csv' file, the number of students with more than 15% of skipped answers is zero, so no student has been deleted from the dataframe."))
+}
+}
+#----------------------------------------------------------------
+# Replace skipped answers with "0"
+data_treat_pre[is.na(data_treat_pre)]= 0
+data_treat_post[is.na(data_treat_post)]= 0
+data_treat_post2[is.na(data_treat_post2)]= 0
+data_ctrl_pre[is.na(data_ctrl_pre)]= 0
+data_ctrl_post[is.na(data_ctrl_post)]= 0
+data_ctrl_post2[is.na(data_ctrl_post2)]= 0
+# Change column names with their origin'sir
+colnames(data_treat_pre) <- paste( colnames(data_treat_pre), "pre", sep = "_")
+colnames(data_treat_post) <- paste( colnames(data_treat_post), "post", sep = "_")
+colnames(data_treat_post2) <- paste( colnames(data_treat_post2), "post2", sep = "_")
+colnames(data_ctrl_pre) <- paste( colnames(data_ctrl_pre), "pre", sep = "_")
+colnames(data_ctrl_post) <- paste( colnames(data_ctrl_post), "post", sep = "_")
+colnames(data_ctrl_post2) <- paste( colnames(data_ctrl_post2), "post2", sep = "_")
+# Calculate average scores
+data_treat_pre <- data_treat_pre %>% mutate(avg_score_pre = round(rowMeans(data_treat_pre[,-1]),3))
+data_treat_post <- data_treat_post %>% mutate(avg_score_post = round(rowMeans(data_treat_post[,-1]),3))
+data_treat_post2 <- data_treat_post2 %>% mutate(avg_score_post2 = round(rowMeans(data_treat_post2[,-1]),3))
+data_ctrl_pre <- data_ctrl_pre %>% mutate(avg_score_pre = round(rowMeans(data_ctrl_pre[,-1]),3))
+data_ctrl_post <- data_ctrl_post %>% mutate(avg_score_post = round(rowMeans(data_ctrl_post[,-1]),3))
+data_ctrl_post2 <- data_ctrl_post2 %>% mutate(avg_score_post2 = round(rowMeans(data_ctrl_post2[,-1]),3))
+# Merge pre/post/post2 data
+data_treat_prepost<-merge(data_treat_pre, data_treat_post, by.x = "id_pre",  by.y = "id_post")
+treat_data_merged<-merge(data_treat_prepost, data_treat_post2, by.x = "id_pre",  by.y = "id_post2")
+names(treat_data_merged)[names(treat_data_merged) == 'id_pre'] <- "id"
+treat_data_merged <- treat_data_merged %>% mutate(datagroup=1)
+data_ctrl_prepost<-merge(data_ctrl_pre, data_ctrl_post, by.x = "id_pre",  by.y = "id_post")
+ctrl_data_merged<-merge(data_ctrl_prepost, data_ctrl_post2, by.x = "id_pre",  by.y = "id_post2")
+names(ctrl_data_merged)[names(ctrl_data_merged) == 'id_pre'] <- "id"
+ctrl_data_merged <- ctrl_data_merged %>% mutate(datagroup=0)
+# Bind treat/control data
+full_data_binded <- rbind(ctrl_data_merged, treat_data_merged)
+# Name datagroup -> 0=control, 1=treatment
+full_data_binded$datagroup<-factor(full_data_binded$datagroup,levels=c(0,1),labels=c("Control", "Treatment"))
+# Read all data sets
+data_treat_pre <- read_csv("data_treat_pre.csv", show_col_types = FALSE)
+data_treat_post<- read_csv("data_treat_post.csv", show_col_types = FALSE)
+data_treat_post2 <- read_csv("data_treat_post2.csv", show_col_types = FALSE)
+data_ctrl_pre <- read_csv("data_ctrl_pre.csv", show_col_types = FALSE)
+data_ctrl_post<- read_csv("data_ctrl_post.csv", show_col_types = FALSE)
+data_ctrl_post2 <- read_csv("data_ctrl_post2.csv", show_col_types = FALSE)
+# Replace skipped answers with "0"
+data_treat_pre[is.na(data_treat_pre)]= 0
+data_treat_post[is.na(data_treat_post)]= 0
+data_treat_post2[is.na(data_treat_post2)]= 0
+data_ctrl_pre[is.na(data_ctrl_pre)]= 0
+data_ctrl_post[is.na(data_ctrl_post)]= 0
+data_ctrl_post2[is.na(data_ctrl_post2)]= 0
+# Change column names with their origin'sir
+colnames(data_treat_pre) <- paste( colnames(data_treat_pre), "pre", sep = "_")
+colnames(data_treat_post) <- paste( colnames(data_treat_post), "post", sep = "_")
+colnames(data_treat_post2) <- paste( colnames(data_treat_post2), "post2", sep = "_")
+colnames(data_ctrl_pre) <- paste( colnames(data_ctrl_pre), "pre", sep = "_")
+colnames(data_ctrl_post) <- paste( colnames(data_ctrl_post), "post", sep = "_")
+colnames(data_ctrl_post2) <- paste( colnames(data_ctrl_post2), "post2", sep = "_")
+# Calculate average scores
+data_treat_pre <- data_treat_pre %>% mutate(avg_score_pre = round(rowMeans(data_treat_pre[,-1]),3))
+data_treat_post <- data_treat_post %>% mutate(avg_score_post = round(rowMeans(data_treat_post[,-1]),3))
+data_treat_post2 <- data_treat_post2 %>% mutate(avg_score_post2 = round(rowMeans(data_treat_post2[,-1]),3))
+data_ctrl_pre <- data_ctrl_pre %>% mutate(avg_score_pre = round(rowMeans(data_ctrl_pre[,-1]),3))
+data_ctrl_post <- data_ctrl_post %>% mutate(avg_score_post = round(rowMeans(data_ctrl_post[,-1]),3))
+data_ctrl_post2 <- data_ctrl_post2 %>% mutate(avg_score_post2 = round(rowMeans(data_ctrl_post2[,-1]),3))
+# Merge pre/post/post2 data
+data_treat_prepost<-merge(data_treat_pre, data_treat_post, by.x = "id_pre",  by.y = "id_post")
+treat_data_merged<-merge(data_treat_prepost, data_treat_post2, by.x = "id_pre",  by.y = "id_post2")
+names(treat_data_merged)[names(treat_data_merged) == 'id_pre'] <- "id"
+treat_data_merged <- treat_data_merged %>% mutate(datagroup=1)
+data_ctrl_prepost<-merge(data_ctrl_pre, data_ctrl_post, by.x = "id_pre",  by.y = "id_post")
+ctrl_data_merged<-merge(data_ctrl_prepost, data_ctrl_post2, by.x = "id_pre",  by.y = "id_post2")
+names(ctrl_data_merged)[names(ctrl_data_merged) == 'id_pre'] <- "id"
+ctrl_data_merged <- ctrl_data_merged %>% mutate(datagroup=0)
+# Bind treat/control data
+full_data_binded <- rbind(ctrl_data_merged, treat_data_merged)
+# Name datagroup -> 0=control, 1=treatment
+full_data_binded$datagroup<-factor(full_data_binded$datagroup,levels=c(0,1),labels=c("Control", "Treatment"))
+View(full_data_binded)
+View(full_data_binded)
+# Name datagroup -> 0=control, 1=treatment
+full_data_binded <- full_data_binded[ , c("id", "avg_score_pre", "avg_score_post", "avg_score_post2", "datagroup")]
+full_data_binded$datagroup<-factor(full_data_binded$datagroup,levels=c(0,1),labels=c("Control", "Treatment"))
+View(full_data_binded)
+# Name datagroup -> 0=control, 1=treatment
+full_data_binded <- full_data_binded[ , c("id", "avg_score_pre", "avg_score_post", "avg_score_post2", "datagroup")]
+View(full_data_binded)
+View(ctrl_data_merged)
+ctrl_data_merged$datagroup
+treat_data_merged$datagroup
+ctrl_data_merged <- ctrl_data_merged[ , c("id", "avg_score_pre", "avg_score_post", "avg_score_post2", "datagroup")]
+View(ctrl_data_merged)
+ctrl_data_merged <- ctrl_data_merged[ , c("id", "datagroup", "avg_score_pre", "avg_score_post", "avg_score_post2")]
+View(ctrl_data_merged)
+treat_data_merged <- treat_data_merged[ , c("id", "datagroup", "avg_score_pre", "avg_score_post", "avg_score_post2")]
+View(treat_data_merged)
+# Bind treat/control data
+full_data_binded <- rbind(ctrl_data_merged, treat_data_merged)
+View(full_data_binded)
+data_long <- reshape(full_data_binded, direction="long", varying=3:5)
+data_long <- reshape(full_data_binded, direction="long", varying=3:5, sep="")
+data_long <- reshape(full_data_binded, varying=NULL, sep="")
+data_long <- reshape(full_data_binded, direction="long", varying=NULL, sep="")
+data_long <- reshape(full_data_binded, direction="long", varying=3:5, sep="")
+names(full_data_binded) <- c("id", "group", "score0", "score1", "score2")
+View(full_data_binded)
+data_long <- reshape(full_data_binded, direction="long", varying=3:5, sep="")
+View(full_data_binded)
+View(data_long)
+data_long$id <- factor(data_long$id)
+data_long$group <- factor(data_long$group,levels=c(0,1),labels=c("Control", "Treatment"))
+data_long$time <- factor(data_long$time,levels=c(0,1,2),labels=c("pre", "post1", "post2"))
+str(data_long)
+data_long$time <- factor(data_long$time,levels=c(0,1,2),labels=c("Pre", "Post1", "Post2"))
+View(data_long)
+str(data_long)
+# Rearrange the data to a long format
+data_long <- reshape(full_data_binded, direction="long", varying=3:5, sep="")
+View(data_long)
+data_long$id <- factor(data_long$id)
+data_long$group <- factor(data_long$group,levels=c(0,1),labels=c("Control", "Treatment"))
+data_long$time <- factor(data_long$time)
+View(data_long)
+data_long$time <- factor(data_long$time,levels=c(0,1,2),labels=c("Pre", "Post1", "Post2"))
+View(data_long)
+# Plot the data
+interaction.plot(data_long$time, data_long$group, data_long$score)
+model1 <- aov(score~group*time +Error(id), data=data_long)
+summary(model1)
+# Run the two-way repeated measures ANOVA
+model <- aov(score~group*time +Error(id), data=data_long)
+result <- summary(model)
+result
+# Plot the data
+interaction_plot <- interaction.plot(data_long$time, data_long$group, data_long$score)
+interaction_plot
+# Plot the data
+interaction.plot(data_long$time, data_long$group, data_long$score)
+time0 <- data_long[data_long$time=="Pre"]
+time1 <- data_long[data_long$time=="Post1"]
+time2 <- data_long[data_long$time=="Post2"]
+# Run post-hoc analyses to check the time the difference is significant
+time0 <- data_long[data_long$time="Pre"]
+# Rearrange the data to a long format
+data_long <- reshape(full_data_binded, direction="long", varying=3:5, sep="")
+# Label group variable (0=control, 1=treatment)
+data_long$id <- factor(data_long$id)
+data_long$group <- factor(data_long$group,levels=c(0,1),labels=c("Control", "Treatment"))
+data_long$time <- factor(data_long$time)
+# Plot the data
+interaction.plot(data_long$time, data_long$group, data_long$score)
+# Run the two-way repeated measures ANOVA
+model <- aov(score~group*time +Error(id), data=data_long)
+result <- summary(model)
+# Run post-hoc analyses to check the time the difference is significant
+time0 <- data_long[data_long$time="Pre"]
+time1 <- data_long[data_long$time="Post1"]
+time2 <- data_long[data_long$time="Post2"]
+# Run post-hoc analyses to check the time the difference is significant
+time0 <- data_long[data_long$time="0"]
+# Run post-hoc analyses to check the time the difference is significant
+time0 <- data_long[data_long$time=="0"]
+# Rearrange the data to a long format
+data_long <- reshape(full_data_binded, direction="long", varying=3:5, sep="")
+# Label group variable (0=control, 1=treatment)
+data_long$id <- factor(data_long$id)
+data_long$group <- factor(data_long$group,levels=c(0,1),labels=c("Control", "Treatment"))
+# Plot the data
+interaction.plot(data_long$time, data_long$group, data_long$score)
+# Run the two-way repeated measures ANOVA
+model <- aov(score~group*time +Error(id), data=data_long)
+result <- summary(model)
+# Run post-hoc analyses to check the time the difference is significant
+time0 <- data_long[data_long$time=="0"]
+# Run post-hoc analyses to check the time the difference is significant
+time0 <- data_long[data_long$time==0]
+# Run post-hoc analyses to check the time the difference is significant
+time0 <- data_long[data_long$time=0]
+# Run post-hoc analyses to check the time the difference is significant
+time0 <- data_long[data_long$time==0]
+# Label group variable (0=control, 1=treatment)
+data_long$id <- factor(data_long$id)
+data_long$group <- factor(data_long$group,levels=c(0,1),labels=c("Control", "Treatment"))
+# Rearrange the data to a long format
+data_long <- reshape(full_data_binded, direction="long", varying=3:5, sep="")
+# Label group variable (0=control, 1=treatment)
+data_long$id <- factor(data_long$id)
+data_long$group <- factor(data_long$group,levels=c(0,1),labels=c("Control", "Treatment"))
+data_long$time <- factor(data_long$time),levels=c(0,1,2),labels=c("Pre", "Post1", "Post2"))
+data_long$time <- factor(data_long$time,levels=c(0,1,2),labels=c("Pre", "Post1", "Post2"))
+# Plot the data
+interaction.plot(data_long$time, data_long$group, data_long$score)
+# Run the two-way repeated measures ANOVA
+model <- aov(score~group*time +Error(id), data=data_long)
+result <- summary(model)
+# Run post-hoc analyses to check the time the difference is significant
+time0 <- data_long[data_long$time="Pre",]
+# Run post-hoc analyses to check the time the difference is significant
+time0 <- data_long[data_long$time=="Pre",]
+time1 <- data_long[data_long$time=="Post1",]
+time2 <- data_long[data_long$time=="Post2",]
+t.test(score~group, data=time0)
+t.test(score~group, data=time1)
+t.test(score~group, data=time2)
+# Run post-hoc analyses to check the time the difference is significant (apply bonferroni correction: apply 0.05/3)
+Pre <- df_long[df_long$time=="Pre",]
+Post1 <- df_long[df_long$time=="Post1",]
+Post2 <- df_long[df_long$time=="Post2",]
+t.test(score~group, data=Pre)
+t.test(score~group, data=Post1)
+t.test(score~group, data=Post2)
+full_data_binded <- rbind(ctrl_data_merged, treat_data_merged)
+names(full_data_binded) <- c("id", "group", "score0", "score1", "score2")
+# Rearrange the data to a long format
+df_long <- reshape(full_data_binded, direction="long", varying=3:5, sep="")
+# Label group variable (0=control, 1=treatment)
+df_long$id <- factor(df_long$id)
+df_long$group <- factor(df_long$group,levels=c(0,1),labels=c("Control", "Treatment"))
+df_long$time <- factor(df_long$time,levels=c(0,1,2),labels=c("Pre", "Post1", "Post2"))
+# Plot the data
+interaction.plot(df_long$time, df_long$group, df_long$score)
+# Run the two-way repeated measures ANOVA
+model <- aov(score~group*time +Error(id), data=df_long)
+result <- summary(model)
+# Run post-hoc analyses to check the time the difference is significant (apply bonferroni correction: apply 0.05/3)
+Pre <- df_long[df_long$time=="Pre",]
+Post1 <- df_long[df_long$time=="Post1",]
+Post2 <- df_long[df_long$time=="Post2",]
+t.test(score~group, data=Pre)
+t.test(score~group, data=Post1)
+t.test(score~group, data=Post2)
+library(DBERlibR)
+twowayrepeatedanova()
+library(DBERlibR)
+onewayancova()
+twowayrepeatedanova()
+library(DBERlibR)
+twowayrepeatedanova()
+library(DBERlibR)
+twowayrepeatedanova()
+library(DBERlibR)
+twowayrepeatedanova()
+library(DBERlibR)
+print("My lucky number is 7")
+message("My lucky number is 7")
+cat("My lucky number is 7")
+setwd("C:/Users/csong7/OneDrive - University of Nebraska-Lincoln/BoxMigrationUNL/01 Helikar IUSE/R Package/DBERlibR_data")
+demo <- read.csv("demographic_data.csv")
+View(demo)
+colnames(demo)
+c_names <- colnames(demo)
+c_names
+colnames(demo[1])
+ncol(demo)
+c(length(demo[,-1]))
+# Run McNemar test to compare paired individual items
+n <- ncol(demo)
+for (i in 2:n) {
+for (i in 2:n) {
+print(paste0(colname(demo[i])))
+}
+for (i in 2:n) {
+print(paste0(colnames(demo[i])))
+}
+message(paste0(colnames(demo[i])))
+cat(paste0(colnames(demo[i])))
+for (i in 2:n) {
+cat(paste0(colnames(demo[i])))
+}
+message(paste0(colnames(demo[i])))
+for (i in 2:n) {
+message(paste0(colnames(demo[i])))
+}
+for (i in 2:n) {
+message(paste0(colnames(demo[i],"=",i)))
+}
+for (i in 2:n) {
+print(paste0(colnames(demo[i],"=",i)))
+}
+for (i in 2:n) {
+print(paste0(colnames(demo[i]),"=",i)))
+}
+for (i in 2:n) {
+print(paste0(colnames(demo[i]),"=",i))
+}
+for (i in 2:n) {
+message(paste0(colnames(demo[i]),"=",i))
+}
+# Run McNemar test to compare paired individual items
+nd <- ncol(demographic_data)
+demographic_data <- read.csv("demographic_data.csv")
+# Run McNemar test to compare paired individual items
+nd <- ncol(demographic_data)
+for (i in 2:nd) {
+message(paste0(colnames(demographic_data[i]),"=",i))
+}
+# Run McNemar test to compare paired individual items
+nd <- ncol(demographic_data)
+for (i in 2:nd) {
+message(paste0(colnames(demographic_data[i]),"=",i))
+}
+dn <- as.numeric(readline(prompt="Enter the number assigned to the demographic variable name you want to analyze: ")) %>%
+group_name <- colnames(demographic_data[dn])
+dn <- as.numeric(readline(prompt="Enter the number assigned to the demographic variable name you want to analyze: "))
+group_name <- colnames(demographic_data[dn])
+group_name
+# Run McNemar test to compare paired individual items
+nd <- ncol(demographic_data)
+for (i in 2:nd) {
+message(paste0(colnames(demographic_data[i]),"=",i))
+}
+message("Please refer to the list of demographic variable variables right above.")
+cat("Please refer to the list of demographic variable variables right above.")
+dn <- as.numeric(readline(prompt="Enter the number assigned to the demographic variable name you want to analyze: "))
+group_name <- colnames(demographic_data[dn])
+group_name
+print("---------------------------------")
+message("--------------------------------")
+cat("-----------------------------------")
+library(DBERlibR)

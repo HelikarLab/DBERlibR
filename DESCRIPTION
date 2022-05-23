@@ -1,0 +1,30 @@
+Package: DBERlibR
+Type: Package
+Title: DBERlibR
+Version: 0.1.0
+Author: Helikar Lab (Changsoo Song), University of Nebraska-Lincoln
+Maintainer: Changsoo Song <csong7@unl.edu>
+Description: The package runs R functions to clean the data, merge/bind multiple data sets (as necessary), check assumption(s) for a specific statistical technique (as necessary), run the main test data analysis, and export the analysis output(s) all at once. The output(s) contain(s) a summary of the results for the convenience of users. Users need to prepare the data file as instructed (refer to Tutorial available at https://helikarlab.github.io/DBERlibR/tutorial.html), save it in the folder designated as a working directory in RStudio, load all dependencies, and type a function in the R console to conduct a specific data analysis.
+Imports:
+  tidyverse,
+  readr,
+  broom,
+  dplyr,
+  ggplot2,
+  corrplot,
+  ggpubr,
+  car,
+  seriation,
+  PerformanceAnalytics,
+  naniar,
+  reshape,
+  openxlsx,
+  ggrepel,
+  rstatix,
+  emmeans,
+  stargazer,
+  psych
+License: AGPL-3
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.1.2
