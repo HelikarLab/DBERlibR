@@ -1,7 +1,7 @@
 # DBERlibR
 ### An R Package for Automated Test Data Analysis
 
-DBERlibR is an R package developed by HelikarLab at the University of Nebraska-Lincoln for automated test data analyses. Some of the most frequently used statistical techniques are developed into functions to clean the data, merge/bind multiple data sets (as necessary), check assumption(s) for a specific statistical technique (as necessary), run the main test data analysis, and export the analysis output(s) automatically and all at once. The output(s) contain(s) a summary of the results for the convenience of users. Users need to prepare the data file as instructed (refer to Tutorial available at https://helikarlabpersonal.github.io/DBERlibR/tutorial.html), save it in the folder designated as a working directory in RStudio, load all dependencies, and type a function in the R console to conduct a specific data analysis.
+DBERlibR is an R package developed by HelikarLab at the University of Nebraska-Lincoln for automated test data analyses. Some of the most frequently used statistical techniques are developed into functions to clean the data, merge/bind multiple data sets (as necessary), check assumption(s) for a specific statistical technique (as necessary), run the main test data analysis, and export the analysis output(s) automatically and all at once. The output(s) contain(s) a summary of the results for the convenience of users. Users need to prepare the data file as instructed (refer to Tutorial available at https://helikarlab.github.io/DBERlibR/tutorial.html), save it in the folder designated as a working directory in RStudio, load all dependencies, and type a function in the R console to conduct a specific data analysis.
 
 # Functions
 
