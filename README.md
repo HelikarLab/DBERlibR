@@ -5,9 +5,6 @@ DBERlibR is an R package developed by HelikarLab at the University of Nebraska-L
 
 # Functions
 
-### loadpackages()
-This function will download all dependencies (other packages required for using DBERlibR) that don’t exist in your RStudio and then automatically load them. You need to run this function whenever you open RStudio to use DBERlibR (you don’t need to repeat this function unless you close and re-open RStudio).
-
 ### itemanalysis(csv_data)
 This function automatically reads and cleans the data (e.g., converting missing values to “0”), calculates difficulty and discriminant scores, and exports the results to an Excel file, which is saved in the working directory. The Excel file name follows the data file name used for item analysis; for example, if you’ve input “data_treat_pre.csv” in the function, then the output Excel file name contains “treat_pre.” The function also generates plots in the jpeg file format to visualize the results; the jpeg file name follows the data file name as well so that you can easily find the results of the item analysis you’ve just run. 
 
