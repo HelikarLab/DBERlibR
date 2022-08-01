@@ -14,16 +14,16 @@ This function automatically reads and cleans the data (e.g., converting missing 
 ### paired_samples()
 This function automatically reads and cleans the data sets (e.g., converting missing values to "0), merges pre-post Data Sets, runs the (parametric) Paired Samples T-test and (nonparametric) Wilcoxon Signed-Rank test, and then exports outputs to help you examine the difference between pre-post scores. 
 
-### independentsamples()
+### independent_samples()
 This function automatically reads and cleans the data sets (e.g., converting missing values to "0), binds treatment-control group Data Sets, runs the Independent Samples T-test (parametric) and Mann–Whitney U test (nonparametric), and then exports outputs to help you examine the difference between the groups. R scripts and their outputs are as follows (just pay attention to the outputs since the codes are automatically run back-end by the function).
 
-### oneway_ancova()
+### one_way_ancova()
 This function can be used to analyze the difference between two groups (e.g., intervention vs. control group) with a covariate (e.g., pre-test scores) controlled. The function automatically merges pre-post data sets, binds treatment-control data sets, and runs scripts to check assumptions of one-way ANCOVA, runs the main One-way ANCOVA and post hoc analyses, and then displays/exports all outputs for you all at once. You must name data files accurately (i.e., “data_treat_pre.csv”, “data_treat_post.csv”, “data_ctrl_pre.csv”," data_ctrl_post.csv") and have them saved in the working directory. 
 
-### oneway_repeated_anova()
+### one_way_repeated_anova()
 This function can be used when you collect data from the same students repeatedly at three different time points (e.g., pre-test, post-test, and second post-test) and you want to examine the significance of the changes over time. The function automatically merges pre, post, and post2 data sets, runs the One-way repeated measures ANOVA with assumptions check, and then displays/exports outputs for you all at once. You need to name data files accurately (i.e., “data_treat_pre.csv”, “data_treat_post.csv”, and “data_treat_post2.csv”) and have them saved in the working directory.
 
-### twoway_repeated_anova()
+### two_way_repeated_anova()
 This function can be used to analyze the interaction effect between time (pre-post1-post2) and conditions for the intervention group. The function automatically reads and cleans the data, merges pre/post1/post2 data sets and/or binds different conditions of the intervention, checks the assumptions of normality, sphericity, and no outlier, and then runs two-way repeated measures ANOVA and conducts post hoc analyses.
 
 ### demo_group_diff(csv_data)
