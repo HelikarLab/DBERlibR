@@ -14,7 +14,6 @@
 #' @import readr
 #' @import reshape
 #' @import rstatix
-#' @import shiny
 #' @importFrom psych describe
 #' @importFrom psych describeBy
 #' @importFrom graphics hist
@@ -38,7 +37,7 @@
 #' @importFrom stats wilcox.test
 #' @import tibble
 #'
-#' @param score_csv_data data This function requires a csv data file.
+#' @param score_csv_data This function requires a csv data file.
 #' Its name (e.g., "data_treat_pre.csv") can be passed as an argument.
 #' Make sure to set the folder with the data file(s) as the working directory.
 #' @param m_cutoff This package will treat skipped answers as incorrect.
@@ -76,13 +75,33 @@
 #' @export
 #'
 
-item_analysis <- function(score_csv_data, m_cutoff = 0.15) {
+item_analysis <- function(score_csv_data, m_cutoff = 0.15, m_choice = FALSE, key_csv_data = NULL) {
 
-  # binding for global variable
-  m_rate <- X2 <- difficulty_index <- q.number <- avg_score <- NULL
+  # Binding for global variable
+  m_rate <- X2 <- multi_data_key <- difficulty_index <- q.number <- avg_score <- NULL
 
   # Reading
   data_original <- read_csv(score_csv_data, col_types = cols())
+
+  # Converting tidy to non-tidy data format
+  # if (tidy == TRUE) {
+  #   data_crtl_post <- data_original %>%
+  #     spread(key = question, value = answer)
+  # }
+
+  # Converting multiple-choice answers to binary
+  if (m_choice == TRUE) {
+    if (is.null(key_csv_data)) {
+      stop("If m_choice is TRUE, then you need to put key_csv_data (e.g., 'answer_keys.csv').")
+    } else {
+        answer_keys <- read_csv(key_csv_data, show_col_types = FALSE)
+        nrow <- nrow(answer_keys)
+        for (i in 1:nrow) {
+          data_original[,i+1][data_original[,i+1]!=answer_keys$key[i]]=0
+          data_original[,i+1][data_original[,i+1]==answer_keys$key[i]]=1
+        }
+    }
+  }
 
   # Deleting students with too many skipped answers-----------------
   nrow_all <- nrow(data_original)
@@ -240,7 +259,7 @@ item_analysis <- function(score_csv_data, m_cutoff = 0.15) {
 #'
 #' @export
 
-paired_samples <- function(pre_csv_data, post_csv_data, m_cutoff = 0.15) {
+paired_samples <- function(pre_csv_data, post_csv_data, m_cutoff = 0.15, m_choice = FALSE, key_csv_data) {
 
   # binding for global variable
   m_rate <- avg_score_pre <- avg_score_post <- Time <- Score <- avg_diff <- outliers <- NULL
@@ -248,6 +267,22 @@ paired_samples <- function(pre_csv_data, post_csv_data, m_cutoff = 0.15) {
   # Read pre-post datasets (of the treatment group)
   data_treat_pre <- read_csv(pre_csv_data, show_col_types = FALSE)
   data_treat_post <- read_csv(post_csv_data, show_col_types = FALSE)
+
+  # Converting multiple-choice answers to binary
+  if (m_choice == TRUE) {
+    if (is.null(key_csv_data)) {
+      stop("If m_choice is TRUE, then you need to put key_csv_data (e.g., 'answer_keys.csv').")
+    } else {
+      answer_keys <- read_csv(key_csv_data, show_col_types = FALSE)
+      nrow <- nrow(answer_keys)
+      for (i in 1:nrow) {
+        data_treat_pre[,i+1][data_treat_pre[,i+1]!=answer_keys$key[i]]=0
+        data_treat_pre[,i+1][data_treat_pre[,i+1]==answer_keys$key[i]]=1
+        data_treat_post[,i+1][data_treat_post[,i+1]!=answer_keys$key[i]]=0
+        data_treat_post[,i+1][data_treat_post[,i+1]==answer_keys$key[i]]=1
+      }
+    }
+  }
 
   # Deleting students with too many skipped answers: data_treat_pre.csv-----------------
   nrow_all <- nrow(data_treat_pre)
@@ -475,7 +510,7 @@ paired_samples <- function(pre_csv_data, post_csv_data, m_cutoff = 0.15) {
 #'
 #' @export
 
-independent_samples <- function(treat_csv_data, ctrl_csv_data, m_cutoff = 0.15) {
+independent_samples <- function(treat_csv_data, ctrl_csv_data, m_cutoff = 0.15, m_choice = FALSE, key_csv_data) {
 
   # binding for global variable
   m_rate <- datagroup <- avg_score_post <- NULL
@@ -483,6 +518,22 @@ independent_samples <- function(treat_csv_data, ctrl_csv_data, m_cutoff = 0.15) 
   # Read the treatment and control group post-test datasets
   data_treat_post<- read_csv(treat_csv_data, show_col_types = FALSE)
   data_ctrl_post<- read_csv(ctrl_csv_data, show_col_types = FALSE)
+
+  # Converting multiple-choice answers to binary
+  if (m_choice == TRUE) {
+    if (is.null(key_csv_data)) {
+      stop("If m_choice is TRUE, then you need to put key_csv_data (e.g., 'answer_keys.csv').")
+    } else {
+      answer_keys <- read_csv(key_csv_data, show_col_types = FALSE)
+      nrow <- nrow(answer_keys)
+      for (i in 1:nrow) {
+        data_treat_post[,i+1][data_treat_post[,i+1]!=answer_keys$key[i]]=0
+        data_treat_post[,i+1][data_treat_post[,i+1]==answer_keys$key[i]]=1
+        data_ctrl_post[,i+1][data_ctrl_post[,i+1]!=answer_keys$key[i]]=0
+        data_ctrl_post[,i+1][data_ctrl_post[,i+1]==answer_keys$key[i]]=1
+      }
+    }
+  }
 
   # Deleting students with too many skipped answers: data_treat_post.csv-----------------
   nrow_all <- nrow(data_treat_post)
@@ -741,7 +792,7 @@ independent_samples <- function(treat_csv_data, ctrl_csv_data, m_cutoff = 0.15) 
 #'
 #' @export
 
-one_way_ancova <- function(treat_pre_csv_data, treat_post_csv_data, ctrl_pre_csv_data, ctrl_post_csv_data, m_cutoff = 0.15) {
+one_way_ancova <- function(treat_pre_csv_data, treat_post_csv_data, ctrl_pre_csv_data, ctrl_post_csv_data, m_cutoff = 0.15, m_choice = FALSE, key_csv_data) {
 
   # binding for global variable
   m_rate <- datagroup <- avg_score_pre <- avg_score_post <- avg_score <- ..eq.label.. <- ..rr.label.. <- .hat <- .sigma <- .fitted <- .std.resid <- NULL
@@ -751,6 +802,26 @@ one_way_ancova <- function(treat_pre_csv_data, treat_post_csv_data, ctrl_pre_csv
   data_treat_post<- read_csv(treat_post_csv_data, show_col_types = FALSE)
   data_ctrl_pre <- read_csv(ctrl_pre_csv_data, show_col_types = FALSE)
   data_ctrl_post<- read_csv(ctrl_post_csv_data, show_col_types = FALSE)
+
+  # Converting multiple-choice answers to binary
+  if (m_choice == TRUE) {
+    if (is.null(key_csv_data)) {
+      stop("If m_choice is TRUE, then you need to put key_csv_data (e.g., 'answer_keys.csv').")
+    } else {
+      answer_keys <- read_csv(key_csv_data, show_col_types = FALSE)
+      nrow <- nrow(answer_keys)
+      for (i in 1:nrow) {
+        data_treat_pre[,i+1][data_treat_pre[,i+1]!=answer_keys$key[i]]=0
+        data_treat_pre[,i+1][data_treat_pre[,i+1]==answer_keys$key[i]]=1
+        data_treat_post[,i+1][data_treat_post[,i+1]!=answer_keys$key[i]]=0
+        data_treat_post[,i+1][data_treat_post[,i+1]==answer_keys$key[i]]=1
+        data_ctrl_pre[,i+1][data_ctrl_pre[,i+1]!=answer_keys$key[i]]=0
+        data_ctrl_pre[,i+1][data_ctrl_pre[,i+1]==answer_keys$key[i]]=1
+        data_ctrl_post[,i+1][data_ctrl_post[,i+1]!=answer_keys$key[i]]=0
+        data_ctrl_post[,i+1][data_ctrl_post[,i+1]==answer_keys$key[i]]=1
+      }
+    }
+  }
 
   # Deleting students with too many skipped answers: data_treat_pre.csv-----------------
   nrow_all <- nrow(data_treat_pre)
@@ -1086,7 +1157,7 @@ one_way_ancova <- function(treat_pre_csv_data, treat_post_csv_data, ctrl_pre_csv
 #'
 #' @export
 
-one_way_repeated_anova <- function(treat_pre_csv_data, treat_post_csv_data, treat_post2_csv_data, m_cutoff = 0.15) {
+one_way_repeated_anova <- function(treat_pre_csv_data, treat_post_csv_data, treat_post2_csv_data, m_cutoff = 0.15, m_choice = FALSE, key_csv_data) {
 
   # binding for global variable
   m_rate <- Time <- Score <- id <- NULL
@@ -1095,6 +1166,24 @@ one_way_repeated_anova <- function(treat_pre_csv_data, treat_post_csv_data, trea
   data_treat_pre <- read_csv(treat_pre_csv_data, show_col_types = FALSE)
   data_treat_post<- read_csv(treat_post_csv_data, show_col_types = FALSE)
   data_treat_post2 <- read_csv(treat_post2_csv_data, show_col_types = FALSE)
+
+  # Converting multiple-choice answers to binary
+  if (m_choice == TRUE) {
+    if (is.null(key_csv_data)) {
+      stop("If m_choice is TRUE, then you need to put key_csv_data (e.g., 'answer_keys.csv').")
+    } else {
+      answer_keys <- read_csv(key_csv_data, show_col_types = FALSE)
+      nrow <- nrow(answer_keys)
+      for (i in 1:nrow) {
+        data_treat_pre[,i+1][data_treat_pre[,i+1]!=answer_keys$key[i]]=0
+        data_treat_pre[,i+1][data_treat_pre[,i+1]==answer_keys$key[i]]=1
+        data_treat_post[,i+1][data_treat_post[,i+1]!=answer_keys$key[i]]=0
+        data_treat_post[,i+1][data_treat_post[,i+1]==answer_keys$key[i]]=1
+        data_treat_post2[,i+1][data_treat_post2[,i+1]!=answer_keys$key[i]]=0
+        data_treat_post2[,i+1][data_treat_post2[,i+1]==answer_keys$key[i]]=1
+      }
+    }
+  }
 
   # Deleting students with too many skipped answers: data_treat_pre.csv-----------------
   nrow_all <- nrow(data_treat_pre)
@@ -1501,7 +1590,7 @@ one_way_repeated_anova <- function(treat_pre_csv_data, treat_post_csv_data, trea
 #'
 #' @export
 
-demo_group_diff <- function(score_csv_data, group_csv_data, m_cutoff = 0.15, group_name) {
+demo_group_diff <- function(score_csv_data, group_csv_data, m_cutoff = 0.15, group_name, m_choice = FALSE, key_csv_data) {
 
   # binding for global variable
   m_rate <- all_of <- group <- average_score <- NULL
@@ -1510,6 +1599,20 @@ demo_group_diff <- function(score_csv_data, group_csv_data, m_cutoff = 0.15, gro
   data_original <- read_csv(score_csv_data,col_types = cols())
   n_col <- ncol(data_original)
   demographic_data <- read_csv(group_csv_data, show_col_types = FALSE)
+
+  # Converting multiple-choice answers to binary
+  if (m_choice == TRUE) {
+    if (is.null(key_csv_data)) {
+      stop("If m_choice is TRUE, then you need to put key_csv_data (e.g., 'answer_keys.csv').")
+    } else {
+      answer_keys <- read_csv(key_csv_data, show_col_types = FALSE)
+      nrow <- nrow(answer_keys)
+      for (i in 1:nrow) {
+        data_original[,i+1][data_original[,i+1]!=answer_keys$key[i]]=0
+        data_original[,i+1][data_original[,i+1]==answer_keys$key[i]]=1
+      }
+    }
+  }
 
   # Deleting students with too many skipped answers: data_original.csv-----------------
   nrow_all <- nrow(data_original)
@@ -1655,6 +1758,7 @@ demo_group_diff <- function(score_csv_data, group_csv_data, m_cutoff = 0.15, gro
 
 }
 
+
 ###############################################################################
 #' Demographic Group Differences
 #'
@@ -1667,6 +1771,4 @@ gui <- function() {
   shiny::runApp(system.file("app.R", "gui_app.R", package = "DBERlibR"), display.mode = "normal")
 
 }
-
-
 
