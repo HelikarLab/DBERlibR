@@ -1,6 +1,6 @@
 Package: DBERlibR
 Type: Package
-Version: 0.1.3
+Version: 0.2.0
 Title: Automated Assessment Data Analysis for Discipline-Based Education Research
 Authors@R: c(person("Changsoo", "Song", role = c("aut", "cre"), email = "csong7@unl.edu"),
              person("Resa", "Helikar", role = "aut"),
