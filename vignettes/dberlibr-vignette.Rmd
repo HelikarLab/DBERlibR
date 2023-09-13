@@ -49,6 +49,8 @@ Sample data files for users to test the functions and view examples have been do
 system.file("extdata", package = "DBERlibR")
 ```
 
+Users can download all data files manually from https://github.com/HelikarLab/DBERlibR/tree/main/inst/extdata 
+
 ## Data Preparation
 
 The minimum requirement to use installed DBERlibR is a user-provided assessment data file (ADF) that contains graded assessment data for all study subjects. The ADF should include only subject identifiers and assessment items. No other data like demographic information should be included in the ADF. Users should save other data in a separate file along with the identifiers - see the demographic data format below. The assessment data should be binary (i.e., 1 for correct answers, 0 for incorrect answers). The ADF can have missing values (these are treated by DBERlibR automatically). The ADF should be in a “CSV” (comma separated values) format.
