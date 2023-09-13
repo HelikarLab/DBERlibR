@@ -39,7 +39,7 @@ ui <- fluidPage(
         style = "color = blue; font-size: 24px;")
   ),
 
-  a("Instructions", href = "https://cran.r-project.org/web/packages/DBERlibR/vignettes/dberlibr-vignette.html"),
+  a("Download Instructions", href = "https://github.com/HelikarLab/DBERlibR/blob/main/vignettes/dberlibr-vignette.html"),
 
   sidebarLayout(
     sidebarPanel(
