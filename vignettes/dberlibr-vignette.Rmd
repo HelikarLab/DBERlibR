@@ -29,7 +29,9 @@ vignette: >
   library(tibble)
 ```
 
-This is a documentation of DBERlibR, which represents Discipline-based Education Research library R. The package runs R scripts to clean the data, merge/bind multiple data sets (as necessary), check assumption(s) for a specific statistical technique (as necessary), and run the main assessment data analysis all at once. The output(s) contain(s) a sample interpretation of the results for the convenience of users. Users need to prepare the data file as instructed and type a function in the R console (with the data file name(s)) to conduct a specific data analysis. 
+This is a documentation of DBERlibR, which represents Discipline-based Education Research library R. The package runs R scripts to clean the data, merge/bind multiple data sets (as necessary), check assumption(s) for a specific statistical technique (as necessary), and run the main assessment data analysis all at once. The output(s) contain(s) a sample interpretation of the results for the convenience of users. Users need to prepare the data file as instructed and type a function in the R console (with the data file name(s)) to conduct a specific data analysis.
+
+Users need to install the most up-to-date R version before installing the DBERlibR package. Some error messages (e.g., “returned errors in R saying it couldn’t find particular files”) identified while testing the package were due to users running an older version of R (versions prior to 3.0). DBERlibR depends on car, dplyr, emmeans, ggplot2, ggpubr, ggrepel, psych, readr, reshape, rstatix, and tibble. Loading the package will automatically load all the dependencies. All of these packages are available on CRAN at http://CRAN.R-project.org/. The results presented in this vignette have been obtained using R version 4.2.2; car 3.1-1; dplyr 1.0.10; emmeans 1.8.3; ggplot2 3.4.0; ggpubr 0.4-0; ggrepel 0.9-1; psych 2.2-5; readr 2.1-2; reshape 0.8.9; rstatix 0.7-0; and tibble 3.1.8. Users can view detailed descriptions of the package by running ‘help(packae=“DBERlibR”)’ in the R console.
 
 ## Load DBERlibR, Set Working Directory, and Save Data File(s) in that Directory
 
@@ -39,7 +41,9 @@ Load DBERlibR by typing/copying the line below in the R console and hitting the 
 library(DBERlibR)
 ```
 
-Then, users need to set “Working Directory” under the “Session” menu in R Studio. The directory should be a folder where (all) data file(s) is(are) saved because the functions in this package import accurately named data file(s) from the working directory. Sample data files for users to test the functions and view examples have been downloaded into users' computer when installing DBERlibR; run the 'system.file("extdata", package = "DBERlibR")' in the console panel, and users will see the path to the downloaded data folder (i.e., extdata).
+Two different ways are available for users to interact with the functions in this DBERlibR. The first way is to use the R console to provide arguments to run specific functions. In this case, users need to set “Working Directory” under the “Session” menu in R Studio if they don't want to provide a path of the data file they need to load; it is not necessary to set the Working Directory if users provide a path of the data file they load. The second way is to use a graphical user interface by running 'gui()' in the R console; a Shiny app will pop up allowing users to interact with the functions graphically. 
+
+Sample data files for users to test the functions and view examples have been downloaded into users' computer when installing DBERlibR; run the 'system.file("extdata", package = "DBERlibR")' in the console panel, and users will see the path to the downloaded data folder (i.e., extdata).
 
 ```{r, message=FALSE}
 system.file("extdata", package = "DBERlibR")
@@ -47,9 +51,9 @@ system.file("extdata", package = "DBERlibR")
 
 ## Data Preparation
 
-The data should include only (student) id and questions (no other data like demographic information; users should save other data in a separate file along with id if users have them). The question data should be binary (i.e., 1 for correct answers, 0 for incorrect answers). The data file should look like the sample below. The data file should be in the "csv" format.
+The minimum requirement to use installed DBERlibR is a user-provided assessment data file (ADF) that contains graded assessment data for all study subjects. The ADF should include only subject identifiers and assessment items. No other data like demographic information should be included in the ADF. Users should save other data in a separate file along with the identifiers - see the demographic data format below. The assessment data should be binary (i.e., 1 for correct answers, 0 for incorrect answers). The ADF can have missing values (these are treated by DBERlibR automatically). The ADF should be in a “CSV” (comma separated values) format.
 
-```{r data_format, echo = FALSE, out.width = "100%", fig.cap = "Data File Format"}
+```{r data_format_binary, echo = FALSE, out.width = "100%", fig.cap = "Example of an Assessment Data File Format: Binary Data of 1 (Correct) and 0 (Incorrect)"}
   knitr::include_graphics("data_format.png")
 ```
 
@@ -57,19 +61,35 @@ As users can see in the data table above, the questions were named Q1, Q2, Q3, a
 
 Skipped answers in the data file(s) (i.e., blank cells in the data frame above) will be treated as incorrect in this package. Too many skipped answers may skew the results of data analysis. Users can exclude students with too many skipped answers by defining too many skipped answers; users can just provide a percentage as an argument (m_cutoff) in the function.
 
+If the ADF contains multiple-choice answers (i.e., before being transformed into binary data with 1 for 'correct' and 0 for 'incorrect'), users must provide this information by adding the argument m_choice = TRUE. Additionally, users should provide the answer keys for transforming multiple-choice answers into binary data by adding another argument, `key_csv_data = "answer_keys.csv", to the function. The figure below shows the ADF before the transformation. 
+
+```{r data_format_multiple, echo = FALSE, out.width = "100%", fig.cap = "Example of the Assessment Data File Format: Multiple-Choice Answers"}
+  knitr::include_graphics("data_format_multiple.png")
+```
+
+The figure below demonstrates how the answer keys should be arranged in a CSV file to be used as an argument. 
+
+```{r data_format_keys, echo = FALSE, out.width = "100%", fig.cap = "Example of the Answer Key Data File Format"}
+  knitr::include_graphics("data_format_keys.png")
+```
+
 If users have students' demographic information and want to examine the differences of demographic subgroups (e.g., male vs. female), they should save those demographic data in a separate file along with id (the same id as in the assessment data file(s)). The data format should look like the one below. DO NOT convert the subgroup label to a numeric code; it will be hard to read the results if users use a numeric code. 
 
-```{r data_format_demo, echo = FALSE, out.width = "100%", fig.cap = "Demographic Data File Format"}
+```{r data_format_demo, echo = FALSE, out.width = "100%", fig.cap = "Example of the Demographic Data File Format"}
   knitr::include_graphics("data_format_demo.png")
 ```
 
-## Item Analysis Function: "item_analysis(score_csv_data, m_cutoff = 0.15)"
+## Item Analysis Function: "item_analysis(score_csv_data, m_cutoff = 0.15, m_choice = FALSE, key_csv_data = NULL)"
 
 The item analysis function requires users to type a data file name as shown in the sample code below. Users can input any of the data file names (e.g., "data_treat_pre.csv", "data_treat_post.csv", "data_ctrl_pre.csv", or "data_ctrl_post.csv") as they become available for item analysis. 
 
 An example without a file path: item_analysis(score_csv_data = "data_treat_pre.csv", m_cutoff = 0.1). If you provide only data file name, as shown in the function above, the folder where the file is saved should be set as the working directory. Alternatively, you can provide the path to the folder in the argument.
 
 Alternative example with a file path: item_analysis(score_csv_data = "C:/Users/csong/documents/data_treat_pre.csv", m_cutoff = 0.1). The 'm_cutoff = 0.1' in the function indicates removing students with 10 percent or more skipped answers (the default is 15 percent: m_cutoff = 0.15).
+
+An example with multiple-choice answers and without a file path: item_analysis(score_csv_data = "data_treat_pre_m.csv", m_cutoff = 0.15, m_choice = TRUE, key_csv_data = “answer_keys.csv”). If the ADF contains multiple-choice answers (i.e., before being transformed into binary data with 1 for 'correct' and 0 for 'incorrect'), users must provide this information by adding the argument m_choice = TRUE. Additionally, users should provide the answer keys for transforming multiple-choice answers into binary data by adding another argument, key_csv_data, with NULL replaced by a CSV file containing the answer keys (e.g., "answer_keys.csv" in the sample code below; to avoid confusion between the binary format and the multiple-choice format, the ADF name in the sample code below has been changed to "data_treat_pre_m.csv" for the purpose of illustration).
+
+Or, users can use a graphical user interface (GUI) to provide the information for all arguments in the function by running 'gui()' in the R console. The GUI is a Shiny app that allows users to input all the information without typing code. In the Shiny app, users can select a function from the drop-down menu, load the ADF by exploring and clicking on a file, and provide additional information (i.e., m_cutoff, m_choice, and key_csv_data, as necessary) through the graphical interface. 
 
 ```{r, message=FALSE, warning=FALSE, echo=FALSE}
 
@@ -160,13 +180,17 @@ Meanwhile, item discrimination represents the relationship between how well stud
 
 The relationship coefficients in the generated discrimination plot are ordered by their size, and the plot displays a vertical red-colored line that represents the threshold of 0.2 so that users can instantly find the question items that warrant users' attention for improvement. The plot above presents 12 question items of which coefficients are less than 0.2.  
 
-## Paired Samples Data Analysis Function: "paired_samples(pre_csv_data, post_csv_data, m_cutoff = 0.15)"
+## Paired Samples Data Analysis Function: "paired_samples(pre_csv_data, post_csv_data, m_cutoff = 0.15, m_choice = FALSE, key_csv_data = NULL)"
 
 An ideal situation for examining the effect of teaching modules on student performance (i.e., pre-post difference) is to have a control group to compare with the treatment/intervention group. However, it is often difficult to get the control group data. If that is the case, users can use this function to examine the difference between pre-test and post-test scores of the treatment group. 
 
 An example without a file path: paired_samples(pre_csv_data = "data_treat_pre.csv", post_csv_data = "data_treat_post.csv", m_cutoff = 0.1). If you provide only data file names, as shown in the function above, the folder where the file is saved should be set as the working directory. Alternatively, you can provide the path to the folder in the argument.
 
 Alternative example with a file path: paired_samples(pre_csv_data = "C:/Users/csong/documents/data_treat_pre.csv", post_csv_data = "C:/Users/csong/documents/data_treat_post.csv", m_cutoff = 0.1). The 'm_cutoff = 0.1' in the function indicates removing students with 10 percent or more skipped answers (the default is 15 percent).
+
+An example with multiple-choice answers and without a file path: paired_samples(pre_csv_data = "data_treat_pre.csv", post_csv_data = "data_treat_post.csv", m_cutoff = 0.1, m_choice = TRUE, key_csv_data = “answer_keys.csv”). If the ADF contains multiple-choice answers (i.e., before being transformed into binary data with 1 for 'correct' and 0 for 'incorrect'), users must provide this information by adding the argument m_choice = TRUE. Additionally, users should provide the answer keys for transforming multiple-choice answers into binary data by adding another argument, key_csv_data, with NULL replaced by a CSV file containing the answer keys.
+
+You can provide all arguments through a graphical user interface by running 'gui()' in the R console.
 
 The function automatically cleans the data sets (e.g., converting missing values to "0), merges pre-post data sets, check assumptions, and then runs the Paired Samples T-test (Parametric) and Wilcoxon Signed-Rank test (Nonparametric) to help users examine the difference between pre-post scores. The outputs of the function are as follows.
 
@@ -245,13 +269,17 @@ Finally, the function further runs scripts to run McNemar test to examine the di
   knitr::include_graphics("pairedsamples_individual_items.png")
 ```
 
-## Indepent Samples Data Analysis Function: "independent_samples(treat_csv_data, ctrl_csv_data, m_cutoff = 0.15)"
+## Indepent Samples Data Analysis Function: "independent_samples(treat_csv_data, ctrl_csv_data, m_cutoff = 0.15, m_choice = FALSE, key_csv_data = NULL)"
 
 Ideally, it requires both pre-test and post-test data to examine the difference between the treatment and the control group. However, it is often difficult to get the pre-test data. If that is the case, users can use this function to examine the difference between two (treatment vs. control) groups. Please make sure to name data files accurately (i.e., “data_treat_post.csv” and “data_ctrl_post.csv”) and have them saved in the working directory.
 
 An example without a file path: independent_samples(treat_csv_data = "data_treat_post.csv", ctrl_csv_data = "data_ctrl_post.csv", m_cutoff = 0.1). If you provide only data file names, as shown in the function above, the folder where the file is saved should be set as the working directory. Alternatively, you can provide the path to the folder in the argument independent_samples
 
 Alternative example with a file path: independent_samples(treat_csv_data = "C:/Users/csong/documents/data_treat_post.csv", ctrl_csv_data = "C:/Users/csong/documents/data_ctrl_post.csv", m_cutoff = 0.1). The 'm_cutoff = 0.1' in the function indicates removing students with 10 percent or more skipped answers (the default is 15 percent; m_cutoff = 0.15).
+
+An example with multiple-choice answers and without a file path: independent_samples(treat_csv_data = "data_treat_post.csv", ctrl_csv_data = "data_ctrl_post.csv", m_cutoff = 0.1, m_choice = TRUE, key_csv_data = “answer_keys.csv”). If the ADF contains multiple-choice answers (i.e., before being transformed into binary data with 1 for 'correct' and 0 for 'incorrect'), users must provide this information by adding the argument m_choice = TRUE. Additionally, users should provide the answer keys for transforming multiple-choice answers into binary data by adding another argument, key_csv_data, with NULL replaced by a CSV file containing the answer keys.
+
+You can provide all arguments through a graphical user interface by running 'gui()' in the R console.
 
 This function automatically cleans the data sets (e.g., converting missing values to "0), binds treatment-control group data sets, check assumptions, and then runs the Independent Samples T-test (parametric) and Mann–Whitney U test (nonparametric) to help users examine the difference between the groups. The outputs from this function are as follows.
 
@@ -330,13 +358,17 @@ Finally, if either the sample size is too small (e.g., less than 15) or the data
 
 ```
 
-## One-way ANCOVA Function: "one_way_ancova(treat_pre_csv_data, treat_post_csv_data, ctrl_pre_csv_data, ctrl_post_csv_data, m_cutoff)"
+## One-way ANCOVA Function: "one_way_ancova(treat_pre_csv_data, treat_post_csv_data, ctrl_pre_csv_data, ctrl_post_csv_data, m_cutoff = 0.15, m_choice = FALSE, key_csv_data = NULL)"
 
 The function "one_way_ancova()" is to conduct a one-way analysis of covariance (ANCOVA). The ANCOVA is an extension of the one-way ANOVA to incorporate a covariate variable into the analytic model. The inclusion of this covariate (pre-test scores in this function), which is linearly related to the dependent variable (e.g., post-test scores), into the analysis increases the ability to detect differences between groups of an independent variable (treatment vs. control group in this function). 
 
-An example without a file path: one_way_ancova(treat_pre_csv_data = "data_treat_pre.csv", treat_post_csv_data = "data_treat_post.csv", package = "DBERlibR"), ctrl_pre_csv_data = "data_ctrl_pre.csv", ctrl_post_csv_data = "data_ctrl_post.csv", m_cutoff = 0.1). If you provide only data file names, as shown in the function above, the folder where the file is saved should be set as the working directory. Alternatively, you can provide the path to the folder in the argument independent_samples
+An example without a file path: one_way_ancova(treat_pre_csv_data = "data_treat_pre.csv", treat_post_csv_data = "data_treat_post.csv", ctrl_pre_csv_data = "data_ctrl_pre.csv", ctrl_post_csv_data = "data_ctrl_post.csv", m_cutoff = 0.1). If you provide only data file names, as shown in the function above, the folder where the file is saved should be set as the working directory. Alternatively, you can provide the path to the folder in the argument independent_samples
 
 Alternative example with a file path: one_way_ancova(treat_pre_csv_data = "C:/Users/csong/documents/data_treat_pre.csv", treat_post_csv_data = "C:/Users/csong/documents/data_treat_post.csv", ctrl_pre_csv_data = "C:/Users/csong/documents/data_ctrl_pre.csv", ctrl_post_csv_data = "C:/Users/csong/documents/data_ctrl_post.csv", m_cutoff = 0.1)). The 'm_cutoff = 0.1' in the function indicates removing students with 10 percent or more skipped answers (the default is 15 percent; m_cutoff = 0.15).
+
+An example with multiple-choice answers and without a file path: one_way_ancova(treat_pre_csv_data = "data_treat_pre.csv", treat_post_csv_data = "data_treat_post.csv", ctrl_pre_csv_data = "data_ctrl_pre.csv", ctrl_post_csv_data = "data_ctrl_post.csv", m_cutoff = 0.1, m_choice = TRUE, key_csv_data = “answer_keys.csv”). If the ADF contains multiple-choice answers (i.e., before being transformed into binary data with 1 for 'correct' and 0 for 'incorrect'), users must provide this information by adding the argument m_choice = TRUE. Additionally, users should provide the answer keys for transforming multiple-choice answers into binary data by adding another argument, key_csv_data, with NULL replaced by a CSV file containing the answer keys.
+
+You can provide all arguments through a graphical user interface by running 'gui()' in the R console.
 
 This function automatically merges pre-post data sets, binds treatment-control data sets, runs scripts to check assumptions of one-way ANCOVA, and then runs the main One-way ANCOVA all at once. The outputs from this function are as follows. The outputs/results from this function are as follows.
 
@@ -499,13 +531,17 @@ The function runs a post-hoc analysis to generate estimated (or adjusted) margin
   }
 ```
 
-## One-way Repeated Measures ANOVA Function: "one_way_repeated_anova(treat_pre_csv_data, treat_post_csv_data, treat_post2_csv_data, m_cutoff = 0.15)"
+## One-way Repeated Measures ANOVA Function: "one_way_repeated_anova(treat_pre_csv_data, treat_post_csv_data, treat_post2_csv_data, m_cutoff = 0.15, m_choice = FALSE, key_csv_data = NULL)"
 
 This function can be used when users collect data from the same students repeatedly at three different time points (e.g., pre-test, post-test, and second post-test) and want to examine the significance of the changes over time. The function automatically merges pre, post, and post2 data sets, runs the One-way repeated measures ANOVA with assumptions check, and then displays outputs all at once. 
 
 An example without a file path: one_way_repeated_anova(treat_pre_csv_data = "data_treat_pre.csv", treat_post_csv_data = "data_treat_post.csv", treat_post2_csv_data = "data_treat_post2.csv", m_cutoff = 0.1). If you provide only data file names, as shown in the function above, the folder where the file is saved should be set as the working directory. Alternatively, you can provide the path to the folder in the argument independent_samples
 
 Alternative example with a file path: one_way_repeated_anova(treat_pre_csv_data = "C:/Users/csong/documents/data_treat_pre.csv", treat_post_csv_data = "C:/Users/csong/documents/data_treat_post.csv", treat_post2_csv_data = "C:/Users/csong/documents/data_treat_post2.csv", m_cutoff = 0.1). The 'm_cutoff = 0.1' in the function indicates removing students with 10 percent or more skipped answers (the default is 15 percent; m_cutoff = 0.15). 
+
+An example with multiple-choice answers and without a file path: one_way_repeated_anova(treat_pre_csv_data = "data_treat_pre.csv", treat_post_csv_data = "data_treat_post.csv", treat_post2_csv_data = "data_treat_post2.csv", m_cutoff = 0.1, m_choice = TRUE, key_csv_data = “answer_keys.csv”). If the ADF contains multiple-choice answers (i.e., before being transformed into binary data with 1 for 'correct' and 0 for 'incorrect'), users must provide this information by adding the argument m_choice = TRUE. Additionally, users should provide the answer keys for transforming multiple-choice answers into binary data by adding another argument, key_csv_data, with NULL replaced by a CSV file containing the answer keys.
+
+You can provide all arguments through a graphical user interface by running 'gui()' in the R console.
 
 This function automatically merges pre-post-post2 data sets, checks the assumptions of one-way ANCOVA, and then runs the main One-way ANCOVA all at once. The outputs from this function are as follows. 
 
@@ -764,13 +800,17 @@ Then, the result of pairwise comparisons with the non-normal data is presented w
     }
 ```
 
-## Analysis of Demographic Group Differences Function: "demo_group_diff(score_csv_data, group_csv_data, m_cutoff = 0.15, group_name)"
+## Analysis of Demographic Group Differences Function: "demo_group_diff(score_csv_data, group_csv_data, m_cutoff = 0.15, group_name, m_choice = FALSE, key_csv_data = NULL)"
 
 The 'demogroupdiff()' function requires users to type a data file name as shown in the sample code below. Users can input any of the data file names (e.g., "data_treat_pre.csv", "data_treat_post.csv") as they become available for the analysis of demographic group differences. 
 
 An example without a file path: demo_group_diff(score_csv_data = "data_treat_pre.csv", group_csv_data = "demographic_data.csv", m_cutoff = 0.1, group_name = "grade"). If you provide only data file names, as shown in the function above, the folder where the file is saved should be set as the working directory. Alternatively, you can provide the path to the folder in the argument independent_samples
 
 Alternative example with a file path: demo_group_diff(score_csv_data = "C:/Users/csong/documents/data_treat_pre.csv", group_csv_data = "C:/Users/csong/documents/demographic_data.csv", m_cutoff = 0.1, group_name = "grade"). The 'm_cutoff = 0.1' in the function indicates removing students with 10 percent or more skipped answers (the default is 15 percent; m_cutoff = 0.15).
+
+An example with multiple-choice answers and without a file path: demo_group_diff(score_csv_data = "data_treat_pre.csv", group_csv_data = "demographic_data.csv", m_cutoff = 0.1, group_name = "grade", m_choice = TRUE, key_csv_data = “answer_keys.csv”). If the ADF contains multiple-choice answers (i.e., before being transformed into binary data with 1 for 'correct' and 0 for 'incorrect'), users must provide this information by adding the argument m_choice = TRUE. Additionally, users should provide the answer keys for transforming multiple-choice answers into binary data by adding another argument, key_csv_data, with NULL replaced by a CSV file containing the answer keys.
+
+You can provide all arguments through a graphical user interface by running 'gui()' in the R console.
 
 This function automatically combines demographic variables to a dataset, and then runs the analysis of variance (ANOVA) with assumptions check to examine demographic sub-group differences for users all at once. The outputs/results from this function are as follows.
 
